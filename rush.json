@@ -1,0 +1,18 @@
+
+{
+    "projects" : [
+        {
+        "packageName" : "hsc. common" ,
+            "projectFolder": "libraries/react-reflux-boilerplate-with-webpack",
+            "shouldPublish": true,
+            "reviewCategory": "a",
+            "git": "https://github.com/iroy2000/react-reflux-boilerplate-with-webpack.git"
+        },
+        {   "packageName": "hsc-utils",
+            "projectFolder": "SDK/Juego-memorama",
+            "shouldPublish": true,
+            "reviewCategory": "a",
+            "git" : "https://github.com/joseduardoo/Juego-memorama.git"
+        }
+    ]
+}
