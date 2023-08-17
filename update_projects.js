@@ -3,82 +3,79 @@ const fs = require("fs");
 const {exec} = require("child_process");
 const { stderr } = require("process");
 
-//Aqui se obtiene la informacion del arcgivo .json
 var data = fs.readFileSync("./rush.json");
 var projects = JSON.parse(data).projects;
-console.log(projects[1].projectFolder);
 
-//var file1 = "SDK/Juego-memorama";
-//var repo = "https://github.com/joseduardoo/Juego-memorama.git"
-//var command = `git clone ${repo} ${file1}`;
-
-// Ciclo que recorre los elementos del arreglo proyects dentro del archivo rush.json
-for (var i = 0; i < projects.length; i++) {
-    deleteRepo(projects[i].projectFolder);
-    updateRepo(projects[i].git, projects[i].projectFolder);
+function deleteDir(file) {
+    fs.rmSync(file, {recursive: true, force: true});
 };
 
-//funcion que elimina un repo, o cualquier carpeta
-function deleteRepo(file) {
-    fs.rm(file, {recursive: true},(error) => {
-        if (error) {
-            console.log("No se pudo eliminar el directorio, probablemente no exista");
-        } else {
-            console.log(`Se elimino el directorio: ${file}`);
+function execCommand(command) {
+    return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve({stdout, stderr});
+        });
+    });
+};
+
+function sleep1(ms) {
+    var start = new Date().getTime();
+    for (var i = 0; i < 1e7; i++) {
+        if ((new Date().getTime() - start) > ms) {
+            break;
         }
-    });
-};
-
-//Funcion que clona un repo de github en la ubicacion señalada (file)
-function updateRepo(repo,file) {
-    let command = `git clone ${repo} ${file}`;
-    exec(command, (error,stdout, stderr) => {
-        if  (error) {
-            console.error("Ocurrio un error al clonar el repositorio: " + repo);
-            return;
-        } else {
-            console.log(`Se clono el repositorio: ${repo} en la carperta: ${file}`);
-        };
-        console.log(stdout);
-        console.log(stderr);
-    });
-
-};
-
-/*
-// Instruccion para borrar cualquier carpeta (contenga o no archivos)
-fs.rm(file1, {recursive: true},(error) => {
-    if (error) {
-        console.log(error);
-    } else {
-        console.log(`Se elimino el directorio: ${file1}`);
-    }
-});
-
-// Instruccion para clonar un nuevo repositorio 
-exec(command, (error,stdout, stderr) => {
-    if  (error) {
-        console.error("Ocurrio un error al clonar el repositorio: " + repo);
-        return;
-    } else {
-        console.log(`Se clono el repositorio: ${repo} en la carperta: ${file1}`);
     };
-    console.log(stdout);
-    console.log(stderr);
-});
-*/
+};
+
+function sleep2(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+async function cloneRepo(repo,file) {
+    let command = `git clone ${repo} ${file}`;
+    //deleteDir(file);
+    //console.log(` ---> Project: ${file} has been removed`);
+    try {
+        const result = await execCommand(command);
+        console.log(result.stdout);
+        console.log(result.stderr);
+        console.log(` ---> Repository: "${repo}" has been cloned in: ${file}`);
+    } catch (error) {
+        console.error("Error: ", error);
+    }
+
+    //deleteDir(`${file}/.git`);
+    //console.log(` ---> Dir: ${file}/.git has been removed`);
+};
+
+async function updateRepos() {
+    for (var projectInRush = 0; projectInRush < projects.length; projectInRush++) {
+        let dir = projects[projectInRush].projectFolder;
+        let repo = projects[projectInRush].git;
+
+        deleteDir(dir);
+        console.log(` ---> Project: "${dir}" has been removed`);
+        await sleep2(2000);
+        
+        await cloneRepo(repo, dir)
+
+        deleteDir(`${dir}/.git`);
+        console.log(` ---> Dir: "${dir}/.git" has been removed`);
+
+        console.log(` ---> Proyect: "${dir}" has been updated <---`);
+    }
+};
+
+updateRepos();
 
 /*
-Esta opcion no funciona porque solo permite borrar una carpeta que contiene archivos, si contiene 
-otra(s) carpeta(s) manda error
-
-fs.readdirSync(file1).forEach((fileName)=>{
-    fs.unlinkSync(file1+"/"+fileName);
-});
-
-fs.rmdir(file1, (error)=>{
-    if (error) {
-        throw error;
-    }
-});
+for (var projectInRush = 0; projectInRush < projects.length; projectInRush++) {
+    deleteDir(projects[projectInRush].projectFolder);
+    console.log(` ---> Project: ${projects[projectInRush].projectFolder} has been removed`);
+    updateRepo(projects[projectInRush].git, projects[projectInRush].projectFolder);
+};
 */
