@@ -6,10 +6,6 @@ const { stderr } = require("process");
 var data = fs.readFileSync("./rush.json");
 var projects = JSON.parse(data).projects;
 
-function deleteDir(file) {
-    fs.rmSync(file, {recursive: true, force: true});
-};
-
 function execCommand(command) {
     return new Promise((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
@@ -22,60 +18,38 @@ function execCommand(command) {
     });
 };
 
-function sleep1(ms) {
-    var start = new Date().getTime();
-    for (var i = 0; i < 1e7; i++) {
-        if ((new Date().getTime() - start) > ms) {
-            break;
-        }
-    };
-};
-
-function sleep2(ms) {
+function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-async function cloneRepo(repo,file) {
-    let command = `git clone ${repo} ${file}`;
-    //deleteDir(file);
-    //console.log(` ---> Project: ${file} has been removed`);
-    try {
-        const result = await execCommand(command);
-        console.log(result.stdout);
-        console.log(result.stderr);
-        console.log(` ---> Repository: "${repo}" has been cloned in: ${file}`);
-    } catch (error) {
-        console.error("Error: ", error);
-    }
-
-    //deleteDir(`${file}/.git`);
-    //console.log(` ---> Dir: ${file}/.git has been removed`);
-};
-
 async function updateRepos() {
-    for (var projectInRush = 0; projectInRush < projects.length; projectInRush++) {
-        let dir = projects[projectInRush].projectFolder;
-        let repo = projects[projectInRush].git;
+    try {
+        for (const project of projects) {                
+            let dir = project.projectFolder;
+            let repo = project.git;
+            let command = `git clone ${repo} ${dir}`;
 
-        deleteDir(dir);
-        console.log(` ---> Project: "${dir}" has been removed`);
-        await sleep2(2000);
+            // delete dir
+            fs.rmSync(dir, {recursive: true, force: true});
+            console.log(` ---> Project: "${dir}" has been removed`);
         
-        await cloneRepo(repo, dir)
+            await sleep(2000);
+            
+            // Clone Repo 
+            let result = await execCommand(command);
+            console.log(result.stdout);
+            console.log(result.stderr);
+            console.log(` ---> Repository: "${repo}" has been cloned in: ${dir}`);
 
-        deleteDir(`${dir}/.git`);
-        console.log(` ---> Dir: "${dir}/.git" has been removed`);
+            // delete dir .git in repo
+            fs.rmSync(`${dir}/.git`, {recursive: true, force: true});
+            console.log(` ---> Dir: "${dir}/.git" has been removed`);
 
-        console.log(` ---> Proyect: "${dir}" has been updated <---`);
+            console.log(` ---> Proyect: "${dir}" has been updated <---`);
+        }
+    } catch (error) {
+        console.error(error);
     }
 };
 
 updateRepos();
-
-/*
-for (var projectInRush = 0; projectInRush < projects.length; projectInRush++) {
-    deleteDir(projects[projectInRush].projectFolder);
-    console.log(` ---> Project: ${projects[projectInRush].projectFolder} has been removed`);
-    updateRepo(projects[projectInRush].git, projects[projectInRush].projectFolder);
-};
-*/
